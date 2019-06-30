@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Connect4</string>
+    <string name="result">Result</string>
+    <string name="play_again">Play Again</string>
+    <string name="computer">Computer</string>
+    <string name="rows">Rows:\u0020</string>
+    <string name="cols">Cols:\u0020</string>
 </resources>
