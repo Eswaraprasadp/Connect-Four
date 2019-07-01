@@ -258,8 +258,6 @@ public class BoardView extends View {
 //            animator.end();
 //        }
 
-        Log.d(tag, "Undo Pressed turnA = " + turnA);
-
         if(!waitFlag && !singlePayer){
             final int deletedRow = moves.get(moves.size() - 1).get(0);
             final int deletedCol = moves.get(moves.size() - 1).get(1);
