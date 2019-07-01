@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -18,45 +17,43 @@ import android.widget.NumberPicker;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import static com.eswar.connect4.AI.tag;
 
 public class MainActivity extends AppCompatActivity {
-    DisplayMetrics metrics;
-    private int height, width;
-    public final static int WC = LinearLayout.LayoutParams.WRAP_CONTENT, MP = LinearLayout.LayoutParams.MATCH_PARENT;
-    private LinearLayout mainLayout, boardLayout, undoRedoLayout;
-    private RelativeLayout resultLayout;
+//    DisplayMetrics metrics;
+//    private int height, width;
+//    public final static int WC = LinearLayout.LayoutParams.WRAP_CONTENT, MP = LinearLayout.LayoutParams.MATCH_PARENT;
     private BoardView boardView;
-    private Button undo, restart;
-    private CheckBox checkBox;
-    private NumberPicker rowsPicker, colsPicker;
+
+//    private final String tag = "tag";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        metrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        height = metrics.heightPixels;
-        width = metrics.widthPixels;
+//        metrics = new DisplayMetrics();
+//        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+//        height = metrics.heightPixels;
+//        width = metrics.widthPixels;
 
-        mainLayout = findViewById(R.id.ll_test_layout);
-        undoRedoLayout = findViewById(R.id.undo_redo_layout);
-        boardLayout = findViewById(R.id.board_layout);
-        resultLayout = findViewById(R.id.result_dimensions_layout);
+//        final LinearLayout mainLayout = findViewById(R.id.ll_test_layout);
+//        final LinearLayout undoRedoLayout = findViewById(R.id.undo_redo_layout);
+//        final LinearLayout boardLayout = findViewById(R.id.board_layout);
+//        final RelativeLayout resultLayout = findViewById(R.id.result_dimensions_layout);
         boardView = findViewById(R.id.board_view);
 
-        undo = (Button)findViewById(R.id.btn_undo);
-        restart = (Button)findViewById(R.id.btn_redo);
+        final Button undo = (Button)findViewById(R.id.btn_undo);
+        final Button restart = (Button)findViewById(R.id.btn_redo);
 
-        checkBox = findViewById(R.id.check_box);
-        rowsPicker = findViewById(R.id.rows_picker);
-        colsPicker = findViewById(R.id.cols_picker);
+        final CheckBox checkBox = findViewById(R.id.check_box);
+        final NumberPicker rowsPicker = findViewById(R.id.rows_picker);
+        final NumberPicker colsPicker = findViewById(R.id.cols_picker);
 
         undo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(tag, "Undo button pressed in MainActivity");
+//                Log.d(tag, "Undo button pressed in MainActivity");
                 boardView.undo();
+
             }
         });
         restart.setOnClickListener(new View.OnClickListener() {

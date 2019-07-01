@@ -6,8 +6,9 @@
     <color name="white">#FFFFFF</color>
     <color name="red">#D8D81B60</color>
     <color name="perfectGreen">#59DE81</color>
+    <color name="yellow">#F0FFF5A0</color>
     <color name="orange">#c8ffa42e</color>
     <color name="black">#ff050505</color>
     <color name="blue">#F046BCDE</color>
-    <color name="transparent_gray">#94F2F3F4</color>
+    <color name="transparent_gray">#C4F2F3F4</color>
 </resources>

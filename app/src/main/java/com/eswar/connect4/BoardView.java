@@ -4,8 +4,12 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.RadialGradient;
+import android.graphics.Shader;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
@@ -20,25 +24,31 @@ import android.view.View;
 import android.view.animation.AccelerateInterpolator;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BoardView extends View {
     private Context context;
 
-    private int rows = 6, cols = 7, min, cut, tot, diff, col, row, savedRow = NONE, savedCol = NONE, aiRow = NONE, aiCol = NONE;
+    private int rows = 6, cols = 7, min, cut, tot, diff, col, row;
     private float x, y;
     public int[][] grids, savedIndices = new int[4][2];
-    public boolean turnA = true, gameOver = false, singlePayer = true, waitFlag = false, started = false;
+    public boolean turnA = true, gameOver = false, singlePayer = true, waitFlag = false, started = false, calledAI = false;
     public int result;
-    public final static int EMPTY = 0, PLAYER_A = 1, PLAYER_B = 5, NONE = -1;
-    public final static int A_WIN = 10, B_WIN = -10, DRAW = 1, NO_RESULT = 0;
+    public final int EMPTY = 0, PLAYER_A = 1, PLAYER_B = 5, NONE = -1;
+//    public final int A = 1, B = 5, O = 0;
+    public final int A_WIN = 10, B_WIN = -10, DRAW = 1, NO_RESULT = 0;
+    private int savedRow = NONE, savedCol = NONE, aiCol = NONE;
     private Paint aPaint = new Paint(), bPaint = new Paint(), nonFilledPaint = new Paint(), winPaint = new Paint();
-    private int winStrokeWidth = 10;
-    private float diameter, padding = 10.0f, extPadding = 40.0f, winStrokeDiameter, winStrokeDiameterRatio = 0.7f;
-    private boolean portrait;
+    private float diameter, padding = 10.0f, extPadding = 40.0f, winStrokeDiameter;
     public final static String tag = "TAG";
+    public final static String ERROR_TAG = "ERROR";
     private MediaPlayer pop, gameOverSound;
     private ValueAnimator animator;
     public int width, height;
     private AI ai;
+    private Thread thread;
+    private List<List<Integer>> moves = new ArrayList<>();
 
     public BoardView(Context context){
         super(context);
@@ -62,8 +72,10 @@ public class BoardView extends View {
 
     public void init(Context context){
         this.context = context;
-        aPaint.setColor(getResources().getColor(R.color.blue));
-        bPaint.setColor(getResources().getColor(R.color.red));
+
+        final int winStrokeWidth = 10;
+        aPaint.setColor(getResources().getColor(R.color.red));
+        bPaint.setColor(getResources().getColor(R.color.yellow));
         nonFilledPaint.setColor(getResources().getColor(R.color.transparent_gray));
         winPaint.setColor(getResources().getColor(R.color.black));
         winPaint.setStyle(Paint.Style.STROKE);
@@ -75,8 +87,8 @@ public class BoardView extends View {
     public void setGrids(int rows, int cols){
         this.rows = rows;
         this.cols = cols;
-        min = min(rows, cols);
-        diff = diff(rows, cols);
+        min = Math.min(rows, cols);
+        diff = Math.abs(rows - cols);
         cut = min + diff - 1;
         tot = 2 * min + diff - 1;
         changeDimen();
@@ -85,14 +97,15 @@ public class BoardView extends View {
         height = getHeight() - (int)extPadding;
         width = getWidth() - (int)extPadding;
 
+        final float winStrokeDiameterRatio = 0.7f;
+
         if(height >= width){
-            portrait = true;
-            diameter = toFloat(width/cols) - toFloat(padding) ;
+            diameter = width/cols * 1.0f - padding * 1.0f;
         }
         else{
-            portrait = false;
-            diameter = toFloat(height/rows) - toFloat(padding);
+            diameter = height/rows * 1.0f - padding * 1.0f;
         }
+
         winStrokeDiameter = diameter * winStrokeDiameterRatio;
 
         start();
@@ -111,6 +124,7 @@ public class BoardView extends View {
         }
         return super.onTouchEvent(event);
     }
+
 
     public void handleTouch(float x, float y){
         if((x < getGridLeft(0)) || (x > getGridLeft(cols)) || (y < getGridTop(-1)) || (y > getGridTop(rows))){
@@ -143,12 +157,18 @@ public class BoardView extends View {
                 super.onAnimationEnd(animation);
 
                 grids[row][col] = value(turnA);
+                List<Integer> moveIndices = new ArrayList<>();
+                moveIndices.add(row);
+                moveIndices.add(col);
+                moves.add(moveIndices);
                 if(!singlePayer || turnA) {
+                    Log.d(tag, "Player's move: column " + (col + 1) + " ie. (" + (row + 1) + ", " + (col + 1) + ")");
                     savedRow = row;
                     savedCol = col;
+
                 }
                 else if(singlePayer && !turnA){
-                    aiRow = row;
+                    Log.d(tag, "Computer's move: column" + (col + 1) + " ie. (" + (row + 1) + ", " + (col + 1) + ")");
                     aiCol = col;
                 }
 
@@ -165,18 +185,19 @@ public class BoardView extends View {
                         playMedia(pop);
                     }
 
-                    waitFlag = false;
+                    turnA = !turnA;
 
-                    if(singlePayer && turnA && !gameOver){
+                    if(singlePayer && !turnA && !gameOver){
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                MotionEvent aiTouch = MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis() + 100, MotionEvent.ACTION_DOWN, getX(ai.getMove(grids)), getY(rows/2), 0);
+                                waitFlag = false;
+                                MotionEvent aiTouch = MotionEvent.obtain(SystemClock.uptimeMillis(), SystemClock.uptimeMillis() + 100, MotionEvent.ACTION_DOWN, getX(ai.getMove(grids)), getY(rows / 2), 0);
                                 onTouchEvent(aiTouch);
                             }
                         }, 100);
                     }
-                    turnA = !turnA;
+                    waitFlag = false;
                     invalidate();
                 }
             }
@@ -191,7 +212,16 @@ public class BoardView extends View {
     }
 
     public void start(){
+
         grids = new int[rows][cols];
+//        grids = new int[][]
+//                {{O, O, B, B, A, O, O},
+//                 {O, O, A, A, B, O, O},
+//                 {O, A, B, B, A, O, O},
+//                 {O, B, A, A, B, O, O},
+//                 {O, B, A, B, A, B, O},
+//                 {O, B, A, A, B, A, A}};
+
         for (int row = 0; row < rows; ++row){
             for(int col = 0; col < cols; ++col){
                 grids[row][col] = EMPTY;
@@ -207,7 +237,12 @@ public class BoardView extends View {
         result = NO_RESULT;
         savedRow = NONE;
         savedCol = NONE;
+        aiCol = NONE;
         ai = new AI(rows, cols);
+        calledAI = false;
+        moves.clear();
+
+//        int demoMove = ai.getMove(grids);
 
         invalidate();
     }
@@ -222,18 +257,41 @@ public class BoardView extends View {
 //            waitFlag = false;
 //            animator.end();
 //        }
-        if(!waitFlag){
-            grids[savedRow][savedCol] = EMPTY;
+
+        Log.d(tag, "Undo Pressed turnA = " + turnA);
+
+        if(!waitFlag && !singlePayer){
+            final int deletedRow = moves.get(moves.size() - 1).get(0);
+            final int deletedCol = moves.get(moves.size() - 1).get(1);
+            grids[deletedRow][deletedCol] = EMPTY;
+            moves.remove(moves.size() - 1);
             turnA = !turnA;
         }
-        if(!turnA && singlePayer && !waitFlag){
-            Log.d(tag, "Undo pressed");
-            grids[aiRow][aiCol] = EMPTY;
-            turnA = !turnA;
+        else if(singlePayer && !waitFlag){
+
+            if(turnA){
+                int deletedRow = moves.get(moves.size() - 1).get(0);
+                int deletedCol = moves.get(moves.size() - 1).get(1);
+                grids[deletedRow][deletedCol] = EMPTY;
+                moves.remove(moves.size() - 1);
+                deletedRow = moves.get(moves.size() - 1).get(0);
+                deletedCol = moves.get(moves.size() - 1).get(1);
+                grids[deletedRow][deletedCol] = EMPTY;
+                moves.remove(moves.size() - 1);
+            }
+            else{
+                int deletedRow = moves.get(moves.size() - 1).get(0);
+                int deletedCol = moves.get(moves.size() - 1).get(1);
+                grids[deletedRow][deletedCol] = EMPTY;
+                moves.remove(moves.size() - 1);
+            }
+//            Log.d(tag, "Undo pressed");
+            turnA = true;
         }
         if(!waitFlag && gameOver){
             result = NO_RESULT;
             gameOver = false;
+            started = true;
         }
         invalidate();
     }
@@ -255,6 +313,7 @@ public class BoardView extends View {
             }
         }
         if(waitFlag && started){
+
             if(turnA){
                 canvas.drawCircle(getX(col), y, diameter/2, aPaint);
             }
@@ -268,6 +327,7 @@ public class BoardView extends View {
             }
         }
     }
+
     public void destroyMediaResources(){
         destroyMediaPlayer(pop);
         destroyMediaPlayer(gameOverSound);
@@ -281,11 +341,11 @@ public class BoardView extends View {
             }
         }
         catch (IllegalStateException ise){
-            Log.d(tag, "IllegalStateException in destroyMediaPlayer");
+//            Log.d(ERROR_TAG, "IllegalStateException in destroyMediaPlayer");
 //            ise.printStackTrace();
         }
         catch (Exception e){
-            Log.d(tag, "Exception in destroyMediaPlayer");
+//            Log.d(ERROR_TAG, "Exception in destroyMediaPlayer");
 //            e.printStackTrace();
         }
     }
@@ -294,11 +354,11 @@ public class BoardView extends View {
             mediaPlayer.start();
         }
         catch (IllegalStateException ise){
-            Log.d(tag, "IllegalStateException in playMedia");
+//            Log.d(ERROR_TAG, "IllegalStateException in playMedia");
 //            ise.printStackTrace();
         }
         catch (Exception e){
-            Log.d(tag, "Exception in playMedia");
+//            Log.d(ERROR_TAG, "Exception in playMedia");
 //            e.printStackTrace();
         }
     }
@@ -461,7 +521,7 @@ public class BoardView extends View {
     }
 
     public int findLowestRow(int col){
-        int row = rows - 1;
+        int row;
         for (row = rows - 1; row >= 0; --row){
             if(grids[row][col] == EMPTY)
                 return row;
@@ -470,20 +530,6 @@ public class BoardView extends View {
     }
     public int value(boolean turnA){
         return (turnA ? PLAYER_A : PLAYER_B);
-    }
-
-    public float toFloat(int i){
-        return i * 1.0f;
-    }
-    public float toFloat(float f){
-        return f * 1.0f;
-    }
-
-    public int min(int a, int b){
-        return (a <= b) ? a : b;
-    }
-    public int diff(int a, int b){
-        return (((a - b) >= 0) ? (a - b) : (b - a));
     }
 
     private MediaPlayer createMediaPlayer(int resource){
