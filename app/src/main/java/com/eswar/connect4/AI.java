@@ -12,7 +12,7 @@ public class AI {
     private final int NO_RESULT = 0, AI_WIN = 2, AI_LOST = -2, DRAW = 1;
     private int[][] ascArray, descArray;
     private int[][] trialBoards;
-    public boolean stopMove = false;
+    private int moveNumber;
 
     public AI (int rows, int cols){
         this.rows = rows;
@@ -38,6 +38,7 @@ public class AI {
         int bestMove = NONE;
         int currentScore = 0;
         int bestScore = ((turnAI) ? MIN : MAX);
+        final int THRESHOLD_RANDOM = 13;
 
         int result = evaluate(boards)[0];
 
@@ -70,7 +71,7 @@ public class AI {
 
         else if (depth >= 5){
 
-            currentScore = evaluate(boards)[1];
+//            currentScore = evaluate(boards)[1];
 
 //            if(result > NO_RESULT){
 //                currentScore = result + 20 - depth;
@@ -82,11 +83,11 @@ public class AI {
 //                currentScore = result;
 //            }
 
-            return new int[]{currentScore, NONE};
+            return new int[]{evaluate(boards)[1], NONE};
         }
         else {
 
-            for (int col = 0; col < cols; ++col) {
+            for (int col = cols/2; col >= 0 && col < cols; ) {
 
                 int lowestRow = findLowestRow(boards, col);
 
@@ -102,10 +103,8 @@ public class AI {
 
                     if (turnAI) {
                         if (currentScore > bestScore) {
-
                             bestScore = currentScore;
                             bestMove = col;
-
                         }
                         if (bestScore > alpha) {
                             alpha = bestScore;
@@ -119,18 +118,27 @@ public class AI {
                             beta = bestScore;
                         }
                     }
+//                    if(depth <= 1){
+//                        print(boards, depth);
+//                        Log.d(depthString(depth), "currentScore = " + currentScore + ", bestScore = " + bestScore + ", bestMove = " + bestMove);
+//                    }
                     boards[lowestRow][col] = EMPTY;
                     if (alpha >= beta) {
                         break;
                     }
-//                    if(depth <= 1){
-//                        print(trialBoards, depth);
-//                        Log.d(depthString(depth), "currentScore = " + currentScore + ", bestScore = " + bestScore + ", bestMove = " + bestMove);
-//                    }
+
+                }
+
+                if(col <= cols/2) {
+                    if(col == 0){ col = cols/2 + 1; }
+                    else{ --col; }
+                }
+                else{
+                    ++col;
                 }
             }
 //            if(depth <= 1) {
-//                Log.d(depthString(depth), "Finally bestScore = " + bestScore);
+//                Log.d(depthString(depth), "Finally bestScore = " + bestScore + ", bestMove = " + bestMove);
 //            }
 
             return new int[]{bestScore, bestMove};
@@ -138,15 +146,10 @@ public class AI {
     }
 
     public int getMove(int[][] boards){
-//        int move =  alphaBeta(boards, true, MIN, MAX, 0)[1];
-
-//        printFinalDashes(1);
-//        printFinalDashes(0);
-
-//        Log.d(tag, "Move returned by getMove: " + move);
         trialBoards = copy(boards);
         return alphaBeta(trialBoards, true, MIN, MAX, 0)[1];
     }
+
 
     private int findLowestRow(int[][] boards, int col){
         int lowestRow;

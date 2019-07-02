@@ -36,7 +36,7 @@ public class BoardView extends View {
     public boolean turnA = true, gameOver = false, singlePayer = true, waitFlag = false, started = false, calledAI = false;
     public int result;
     public final int EMPTY = 0, PLAYER_A = 1, PLAYER_B = 5, NONE = -1;
-//    public final int A = 1, B = 5, O = 0;
+    public final int A = 1, B = 5, O = 0;
     public final int A_WIN = 10, B_WIN = -10, DRAW = 1, NO_RESULT = 0;
     private int savedRow = NONE, savedCol = NONE, aiCol = NONE;
     private Paint aPaint = new Paint(), bPaint = new Paint(), nonFilledPaint = new Paint(), winPaint = new Paint();
